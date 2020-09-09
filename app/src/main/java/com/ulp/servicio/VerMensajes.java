@@ -25,44 +25,55 @@ public class VerMensajes extends Service {
 
 
         //inicie un servicio que cada 9000 milisegundos acceda al Content Provider
-        Uri sms = Telephony.Sms.CONTENT_URI;
-        ContentResolver c = getContentResolver();
+    final Uri sms = Telephony.Sms.CONTENT_URI;
+    final ContentResolver c = getContentResolver();
 
+    Runnable leerMsj = new Runnable() {
+        @Override
+        public void run() {
+            //traemos el while
+            while  (true){
 
-        while  (true){
+                Cursor cursor =c.query(sms,null,null,null,null);
 
-            Cursor cursor =c.query(sms,null,null,null,null);
+                if(cursor.getCount()>0){
+                    int control=0;
+                    while(cursor.moveToNext() && control<5){
+                        //extraemos el numero del celu
+                        String movil = cursor.getString(cursor.getColumnIndex(Telephony.Sms.Inbox.ADDRESS));
+                        //extraemos la fecha del msj
+                        String fecha = cursor.getString(cursor.getColumnIndex(Telephony.Sms.Inbox.DATE));
+                        //parseamos el string a lon de la fecha
+                        long dateLong = Long.parseLong(fecha);
+                        //instanciamos un objeto fecha con el long
+                        Date date = new Date(dateLong);
+                        //extraemos el msj
+                        String msj = cursor.getString(cursor.getColumnIndex(Telephony.Sms.Inbox.BODY));
 
-            if(cursor.getCount()>0){
-                int control=0;
-                while(cursor.moveToNext() && control<5){
-                    //extraemos el numero del celu
-                    String movil = cursor.getString(cursor.getColumnIndex(Telephony.Sms.Inbox.ADDRESS));
-                    //extraemos la fecha del msj
-                    String fecha = cursor.getString(cursor.getColumnIndex(Telephony.Sms.Inbox.DATE));
-                    //parseamos el string a lon de la fecha
-                    long dateLong = Long.parseLong(fecha);
-                    //instanciamos un objeto fecha con el long
-                    Date date = new Date(dateLong);
-                    //extraemos el msj
-                    String msj = cursor.getString(cursor.getColumnIndex(Telephony.Sms.Inbox.BODY));
+                        //sacamos por consola
+                        Log.d("consola","Mensaje : "+msj+" del Numero :"+movil+" recibido el "+date.toString());
 
-                    //sacamos por consola
-                    Log.d("consola","Mensaje del Nuemero :"+movil+"recibido el"+date.toString());
+                        //incrementamos el control
+                        control++;
+                    }
+                    try {
+                        Thread.sleep(9000); //dormimos el hilo por 9000 ms
 
-                    //incrementamos el control
-                    control++;
+                    } catch (InterruptedException e) {
+                        Log.e("Error", e.getMessage());
+                    }
                 }
-                try {
-                    Thread.sleep(9000); //dormimos el hilo por 9000 ms
-                    //regresamos al primero
-                    cursor.moveToFirst();
-                } catch (InterruptedException e) {
-                    Log.e("Error", e.getMessage());
-                }
+
             }
 
+            //
         }
+    };
+    Thread lector=new Thread(leerMsj);
+    lector.start();
+    return START_STICKY;
+
+
 
     }
 
